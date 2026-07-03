@@ -8,7 +8,6 @@ out/
 *.iml
 *.iws
 .vscode/
-.claude/
 
 # Ignore jar files (like MythicMobs jar) to avoid uploading large binaries to Github
 *.jar
