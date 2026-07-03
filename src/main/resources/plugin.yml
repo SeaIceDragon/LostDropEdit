@@ -1,0 +1,15 @@
+name: LostDropEdit
+version: ${version}
+main: me.seaicedragon.lostdropedit.LostDropEditPlugin
+api-version: '1.21'
+depend:
+  - MythicMobs
+commands:
+  mobdrops:
+    description: Mob drop editör menüsünü aç.
+    usage: /mobdrops
+    permission: lostdropedit.admin
+permissions:
+  lostdropedit.admin:
+    description: Mob droplarını açmaya ve düzenlemeye izin verir.
+    default: op

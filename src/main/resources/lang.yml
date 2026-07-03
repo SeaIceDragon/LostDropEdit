@@ -1,0 +1,30 @@
+titles:
+  browser: "Mob Drop Tarayıcısı"
+  editor: "Mob Drop Editörü"
+  drop-editor: "Drop Ayarları"
+
+messages:
+  command:
+    only-players: "Bu komutu sadece oyuncular kullanabilir."
+    no-permission: "Bu komutu kullanma iznin yok."
+  chat:
+    type-answer: "Cevabını sohbete yaz. İptal etmek için 'iptal' yaz."
+    input-cancelled: "Giriş iptal edildi."
+  error:
+    mob-missing: "Bu mob artık mevcut değil. Liste yenilendi."
+    drop-missing: "Bu drop artık mevcut değil."
+    invalid-chance: "Geçersiz şans değeri. Örnek: 100, 25, 0.5, 0.0001"
+    invalid-min-amount: "Geçersiz minimum miktar."
+    invalid-max-amount: "Geçersiz maksimum miktar."
+    main-hand-empty: "Önce ana elinde kullanacağın eşyayı tut."
+    no-item-to-add: "Eklemek için imlecinde veya envanterinde bir eşya olmalı."
+    preview-not-importable: "Bu Mythic drop otomatik olarak içe aktarılamıyor."
+
+prompts:
+  search: "Aramak istediğin mob adını veya anahtarını yaz."
+  chance: "Drop şansını 0 ile 100 arasında yüzde olarak yaz."
+  min-amount: "Minimum miktarı tam sayı olarak yaz (en az 1)."
+  max-amount: "Maksimum miktarı tam sayı olarak yaz (en az 1)."
+
+keywords:
+  cancel: "iptal"

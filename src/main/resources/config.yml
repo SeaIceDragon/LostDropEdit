@@ -1,0 +1,8 @@
+database:
+  file: data.db
+
+defaults:
+  mode: APPEND
+  chance-per-million: 1000000
+  min-amount: 1
+  max-amount: 1
