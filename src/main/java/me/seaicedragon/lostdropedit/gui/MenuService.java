@@ -9,6 +9,7 @@ import me.seaicedragon.lostdropedit.mythic.ExistingDropPreview;
 import me.seaicedragon.lostdropedit.mythic.MythicBridge;
 import me.seaicedragon.lostdropedit.storage.CustomDropEntry;
 import me.seaicedragon.lostdropedit.storage.DropMode;
+import me.seaicedragon.lostdropedit.storage.MobXpSettings;
 import me.seaicedragon.lostdropedit.storage.SQLiteStorage;
 import me.seaicedragon.lostdropedit.util.Lang;
 import me.seaicedragon.lostdropedit.util.Text;
@@ -134,13 +135,15 @@ public final class MenuService implements Listener {
             }
         }
 
-        for (int slot = 27; slot <= 35; slot++) {
+        for (int slot = 27; slot <= 34; slot++) {
             inventory.setItem(slot, button(Material.LIME_STAINED_GLASS_PANE, "Drop Ekle", List.of(
                 "İmlecinde bir eşya varken bu slota tıkla,",
                 "veya kendi envanterinden shift-tık ile ekle.",
                 "Eşya şablon olarak kopyalanır; tüketilmez."
             )));
         }
+
+        inventory.setItem(35, createXpButton(context.mobKey()));
 
         if (mob.source() == MobSource.MYTHIC) {
             int existingStart = existingPage * EXISTING_PAGE_SIZE;
@@ -197,6 +200,19 @@ public final class MenuService implements Listener {
         meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
         icon.setItemMeta(meta);
         return icon;
+    }
+
+    private ItemStack createXpButton(String mobKey) {
+        MobXpSettings xp = storage.getXpSettings(mobKey);
+        String status = xp.grantsXp()
+            ? xp.xpMin() + " - " + xp.xpMax() + " XP (" + Text.chanceAsPercent(xp.xpChancePerMillion()) + ")"
+            : "Kapalı";
+        return button(Material.EXPERIENCE_BOTTLE, "XP Ayarları", List.of(
+            "Mevcut: " + status,
+            "Bu mob ölünce, öldüğü yere tecrübe topu düşer.",
+            "Ayarlamak için sol tıkla (sırayla min, maks, şans girilir).",
+            "XP'yi kapatmak için sağ tıkla."
+        ));
     }
 
     private ItemStack createExistingDropIcon(ExistingDropPreview preview) {
@@ -373,13 +389,24 @@ public final class MenuService implements Listener {
             return;
         }
 
-        if (rawSlot >= 27 && rawSlot <= 35) {
+        if (rawSlot >= 27 && rawSlot <= 34) {
             ItemStack template = resolveTemplateFromEvent(event);
             if (template != null && !template.getType().isAir()) {
                 storage.addDrop(context.mobKey(), template);
                 openEditor(player, context);
             } else {
                 player.sendMessage(lang.get("messages.error.no-item-to-add"));
+            }
+            return;
+        }
+
+        if (rawSlot == 35) {
+            if (event.getClick() == ClickType.RIGHT) {
+                MobXpSettings current = storage.getXpSettings(context.mobKey());
+                storage.setXpSettings(context.mobKey(), new MobXpSettings(0, 0, current.xpChancePerMillion()));
+                openEditor(player, context);
+            } else {
+                promptXpSettings(player, context);
             }
             return;
         }
@@ -509,6 +536,37 @@ public final class MenuService implements Listener {
         }
     }
 
+    private void promptXpSettings(Player player, EditorContext context) {
+        String mobKey = context.mobKey();
+        chatInputService.request(player, lang.get("prompts.xp-min"), minInput -> {
+            Integer min = parseNonNegativeInt(minInput);
+            if (min == null) {
+                player.sendMessage(lang.get("messages.error.invalid-xp"));
+                openEditor(player, context);
+                return;
+            }
+            chatInputService.request(player, lang.get("prompts.xp-max"), maxInput -> {
+                Integer max = parseNonNegativeInt(maxInput);
+                if (max == null) {
+                    player.sendMessage(lang.get("messages.error.invalid-xp"));
+                    openEditor(player, context);
+                    return;
+                }
+                int fixedMax = Math.max(min, max);
+                chatInputService.request(player, lang.get("prompts.xp-chance"), chanceInput -> {
+                    Integer chance = parseChance(chanceInput);
+                    if (chance == null) {
+                        player.sendMessage(lang.get("messages.error.invalid-chance"));
+                        openEditor(player, context);
+                        return;
+                    }
+                    storage.setXpSettings(mobKey, new MobXpSettings(min, fixedMax, chance));
+                    openEditor(player, context);
+                });
+            });
+        });
+    }
+
     private void moveDrop(String mobKey, long dropId, int direction) {
         List<CustomDropEntry> drops = new ArrayList<>(sortedDrops(mobKey));
         int currentIndex = -1;
@@ -587,6 +645,15 @@ public final class MenuService implements Listener {
         try {
             int parsed = Integer.parseInt(input.trim());
             return parsed >= 1 ? parsed : null;
+        } catch (NumberFormatException exception) {
+            return null;
+        }
+    }
+
+    private @Nullable Integer parseNonNegativeInt(String input) {
+        try {
+            int parsed = Integer.parseInt(input.trim());
+            return parsed >= 0 ? parsed : null;
         } catch (NumberFormatException exception) {
             return null;
         }

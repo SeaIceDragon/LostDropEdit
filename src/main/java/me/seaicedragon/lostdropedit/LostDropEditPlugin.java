@@ -7,6 +7,7 @@ import me.seaicedragon.lostdropedit.mob.MobRegistryService;
 import me.seaicedragon.lostdropedit.mythic.MythicBridge;
 import me.seaicedragon.lostdropedit.storage.SQLiteStorage;
 import me.seaicedragon.lostdropedit.util.Lang;
+import me.seaicedragon.lostdropedit.valhalla.ValhallaBridge;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.command.Command;
@@ -43,7 +44,8 @@ public final class LostDropEditPlugin extends JavaPlugin implements TabExecutor 
         this.chatInputService = new ChatInputService(this, lang);
         this.menuService = new MenuService(this, storage, mythicBridge, mobRegistryService, chatInputService, lang);
 
-        DropService dropService = new DropService(this, storage, mythicBridge);
+        ValhallaBridge valhallaBridge = new ValhallaBridge(this);
+        DropService dropService = new DropService(this, storage, mythicBridge, valhallaBridge);
 
         getServer().getPluginManager().registerEvents(chatInputService, this);
         getServer().getPluginManager().registerEvents(menuService, this);

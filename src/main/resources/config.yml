@@ -6,3 +6,27 @@ defaults:
   chance-per-million: 1000000
   min-amount: 1
   max-amount: 1
+
+# Default XP reward settings applied to mobs that have not been configured yet.
+# XP is dropped as vanilla experience orbs at the mob's death location.
+xp:
+  default-min: 0
+  default-max: 0
+  default-chance-per-million: 1000000
+
+# Boosts custom drop chances for the player who killed the mob, based on that
+# player's accumulated ValhallaMMO loot stat(s). Works only if ValhallaMMO is
+# installed; otherwise it is silently ignored and drops use their base chance.
+race-boost:
+  enabled: true
+  # ValhallaMMO stat keys read for the killer. Their values are summed.
+  # ENTITY_DROPS = general drop multiplier, ENTITY_DROP_LUCK = rare drop multiplier.
+  stat-keys:
+    - ENTITY_DROPS
+    - ENTITY_DROP_LUCK
+  # Scales how strongly the ValhallaMMO stat affects your drop chance (1.0 = as-is).
+  influence: 1.0
+  # Hard cap on the drop-chance multiplier (2.0 = at most +100% / double chance).
+  max-multiplier: 2.0
+  # How long (ms) ValhallaMMO caches the killer's stat before recomputing.
+  cache-ms: 10000

@@ -16,6 +16,7 @@ messages:
     invalid-chance: "Geçersiz şans değeri. Örnek: 100, 25, 0.5, 0.0001"
     invalid-min-amount: "Geçersiz minimum miktar."
     invalid-max-amount: "Geçersiz maksimum miktar."
+    invalid-xp: "Geçersiz XP değeri. 0 veya daha büyük bir tam sayı gir."
     main-hand-empty: "Önce ana elinde kullanacağın eşyayı tut."
     no-item-to-add: "Eklemek için imlecinde veya envanterinde bir eşya olmalı."
     preview-not-importable: "Bu Mythic drop otomatik olarak içe aktarılamıyor."
@@ -25,6 +26,9 @@ prompts:
   chance: "Drop şansını 0 ile 100 arasında yüzde olarak yaz."
   min-amount: "Minimum miktarı tam sayı olarak yaz (en az 1)."
   max-amount: "Maksimum miktarı tam sayı olarak yaz (en az 1)."
+  xp-min: "Minimum XP miktarını tam sayı olarak yaz (0 veya üzeri)."
+  xp-max: "Maksimum XP miktarını tam sayı olarak yaz (0 veya üzeri)."
+  xp-chance: "XP düşme şansını 0 ile 100 arasında yüzde olarak yaz."
 
 keywords:
   cancel: "iptal"

@@ -4,6 +4,8 @@ main: me.seaicedragon.lostdropedit.LostDropEditPlugin
 api-version: '1.21'
 depend:
   - MythicMobs
+softdepend:
+  - ValhallaMMO
 commands:
   mobdrops:
     description: Mob drop editör menüsünü aç.

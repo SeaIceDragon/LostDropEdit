@@ -25,7 +25,10 @@ public final class SQLiteStorage {
     private static final String CREATE_MOB_SETTINGS = """
         CREATE TABLE IF NOT EXISTS mob_settings (
             mob_key TEXT PRIMARY KEY,
-            mode TEXT NOT NULL
+            mode TEXT NOT NULL,
+            xp_min INTEGER NOT NULL DEFAULT 0,
+            xp_max INTEGER NOT NULL DEFAULT 0,
+            xp_chance INTEGER NOT NULL DEFAULT 1000000
         )
         """;
 
@@ -44,6 +47,7 @@ public final class SQLiteStorage {
 
     private final LostDropEditPlugin plugin;
     private final Map<String, DropMode> mobModes = new ConcurrentHashMap<>();
+    private final Map<String, MobXpSettings> mobXp = new ConcurrentHashMap<>();
     private final Map<String, List<CustomDropEntry>> dropsByMob = new ConcurrentHashMap<>();
     private Connection connection;
 
@@ -70,9 +74,36 @@ public final class SQLiteStorage {
                 statement.execute(CREATE_CUSTOM_DROPS);
             }
 
+            migrateSchema();
             reloadCaches();
         } catch (SQLException exception) {
             throw new IllegalStateException("Failed to open SQLite storage.", exception);
+        }
+    }
+
+    /**
+     * Adds columns introduced after the first release to databases created by older versions.
+     * Uses PRAGMA table_info to avoid ALTERing columns that already exist.
+     */
+    private void migrateSchema() throws SQLException {
+        List<String> mobSettingsColumns = new ArrayList<>();
+        try (Statement statement = connection.createStatement();
+             ResultSet resultSet = statement.executeQuery("PRAGMA table_info(mob_settings)")) {
+            while (resultSet.next()) {
+                mobSettingsColumns.add(resultSet.getString("name"));
+            }
+        }
+
+        try (Statement statement = connection.createStatement()) {
+            if (!mobSettingsColumns.contains("xp_min")) {
+                statement.execute("ALTER TABLE mob_settings ADD COLUMN xp_min INTEGER NOT NULL DEFAULT 0");
+            }
+            if (!mobSettingsColumns.contains("xp_max")) {
+                statement.execute("ALTER TABLE mob_settings ADD COLUMN xp_max INTEGER NOT NULL DEFAULT 0");
+            }
+            if (!mobSettingsColumns.contains("xp_chance")) {
+                statement.execute("ALTER TABLE mob_settings ADD COLUMN xp_chance INTEGER NOT NULL DEFAULT 1000000");
+            }
         }
     }
 
@@ -88,6 +119,7 @@ public final class SQLiteStorage {
 
     public void reloadCaches() {
         mobModes.clear();
+        mobXp.clear();
         dropsByMob.clear();
 
         try {
@@ -107,10 +139,16 @@ public final class SQLiteStorage {
     }
 
     private void loadModes() throws SQLException {
-        try (PreparedStatement statement = connection.prepareStatement("SELECT mob_key, mode FROM mob_settings");
+        try (PreparedStatement statement = connection.prepareStatement("SELECT mob_key, mode, xp_min, xp_max, xp_chance FROM mob_settings");
              ResultSet resultSet = statement.executeQuery()) {
             while (resultSet.next()) {
-                mobModes.put(resultSet.getString("mob_key"), DropMode.valueOf(resultSet.getString("mode")));
+                String mobKey = resultSet.getString("mob_key");
+                mobModes.put(mobKey, DropMode.valueOf(resultSet.getString("mode")));
+                mobXp.put(mobKey, new MobXpSettings(
+                    resultSet.getInt("xp_min"),
+                    resultSet.getInt("xp_max"),
+                    resultSet.getInt("xp_chance")
+                ));
             }
         }
     }
@@ -149,6 +187,34 @@ public final class SQLiteStorage {
             mobModes.put(mobKey, mode);
         } catch (SQLException exception) {
             throw new IllegalStateException("Failed to save mob mode for " + mobKey, exception);
+        }
+    }
+
+    public MobXpSettings getXpSettings(String mobKey) {
+        MobXpSettings cached = mobXp.get(mobKey);
+        if (cached != null) {
+            return cached;
+        }
+        return new MobXpSettings(
+            Math.max(0, plugin.getConfig().getInt("xp.default-min", 0)),
+            Math.max(0, plugin.getConfig().getInt("xp.default-max", 0)),
+            plugin.getConfig().getInt("xp.default-chance-per-million", 1_000_000)
+        );
+    }
+
+    public void setXpSettings(String mobKey, MobXpSettings settings) {
+        String sql = "INSERT INTO mob_settings(mob_key, mode, xp_min, xp_max, xp_chance) VALUES(?, ?, ?, ?, ?) "
+            + "ON CONFLICT(mob_key) DO UPDATE SET xp_min = excluded.xp_min, xp_max = excluded.xp_max, xp_chance = excluded.xp_chance";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, mobKey);
+            statement.setString(2, getMode(mobKey).name());
+            statement.setInt(3, settings.xpMin());
+            statement.setInt(4, settings.xpMax());
+            statement.setInt(5, settings.xpChancePerMillion());
+            statement.executeUpdate();
+            mobXp.put(mobKey, settings);
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Failed to save XP settings for " + mobKey, exception);
         }
     }
 
